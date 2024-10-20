@@ -9,7 +9,6 @@ import wtr from './img/mainimg/watering.svg';
 import { TonConnectUIProvider, useTonConnectUI, useTonWallet, useTonAddress } from '@tonconnect/ui-react';
 
 const API_URL = 'https://147.45.246.69:8001';
-const query_id = 'query_id=AAEvw-FeAAAAAC_D4V6JvhPD&user=%7B%22id%22%3A1591853871%2C%22first_name%22%3A%22Andy%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22og_Andy%22%2C%22language_code%22%3A%22ru%22%2C%22allows_write_to_pm%22%3Atrue%7D&auth_date=1728994271&hash=4a9c2eed2acd85a284f28bad44053724c054060a0fb4da7170ceea705b410eda';
 
 function Main() {
   const [userData, setUserData] = useState(null);
@@ -20,18 +19,25 @@ function Main() {
   const userFriendlyAddress = useTonAddress();
   const rawAddress = useTonAddress(false);
   const navigate = useNavigate();
+  const [queryId, setQueryId] = useState(null);
 
   useEffect(() => {
     const { WebApp } = window.Telegram;
     WebApp.BackButton.hide();
     WebApp.disableVerticalSwipes();
     WebApp.expand();
+    
+    // Получение initDataUnsafe из Telegram WebApp SDK
     const user = WebApp.initDataUnsafe?.user;
-    if (user) {
+    const initData = WebApp.initDataUnsafe;
+    const queryId = initData?.query_id;
+
+    if (user && queryId) {
       setUserData({
         username: user.username,
         avatarUrl: user.photo_url,
       });
+      setQueryId(queryId); // Устанавливаем query_id из initDataUnsafe
     }
   }, [navigate]);
 
@@ -41,7 +47,7 @@ function Main() {
         const response = await fetch(`${API_URL}/profile/${userData?.username || 1}`, {
           method: 'GET',
           headers: {
-            'custom-header': query_id,
+            'custom-header': queryId, // Используем динамический query_id
           },
         });
         if (!response.ok) {
@@ -53,10 +59,10 @@ function Main() {
         console.error('Ошибка загрузки профиля:', error);
       }
     };
-    if (userData) {
+    if (userData && queryId) {
       fetchProfileData();
     }
-  }, [userData]);
+  }, [userData, queryId]);
 
   const triggerHapticFeedback = () => {
     const { WebApp } = window.Telegram;
@@ -72,7 +78,7 @@ function Main() {
         await fetch(`${API_URL}/profile/wallet/${rawAddress}`, {
           method: 'PATCH',
           headers: {
-            'custom-header': query_id,
+            'custom-header': queryId, // Используем динамический query_id
           },
         });
       }
@@ -119,7 +125,7 @@ function Main() {
       const response = await fetch(`${API_URL}/profile/watering/${userData?.username || 1}`, {
         method: 'GET',
         headers: {
-          'custom-header': query_id,
+          'custom-header': queryId, // Используем динамический query_id
         },
       });
       if (!response.ok) {

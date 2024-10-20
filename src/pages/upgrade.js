@@ -2,14 +2,33 @@ import './css/upgrade.css';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom'; // Добавлен импорт Link
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import yellrab from './img/upg/yellrab.png';
+
+// Компонент для отображения и покупки Boost
+function BoostItem({ level, price, onBuy }) {
+  return (
+    <div className='boost'>
+      <span>
+        <p>Upgrade 1</p>
+        <p>level {level}/3</p>
+      </span>
+      <button onClick={onBuy}>
+        <p>BUY</p>
+        <p>{price} $CRT</p>
+      </button>
+    </div>
+  );
+}
 
 function Main() {
   const [userData, setUserData] = useState(null);
+  const [boosts, setBoosts] = useState([]); // Состояние для списка Boost
   const navigate = useNavigate(); // Хук для навигации в react-router-dom
   
   useEffect(() => {
     const { WebApp } = window.Telegram;
+    
     // Показать кнопку "Назад"
     WebApp.BackButton.show();
 
@@ -27,12 +46,36 @@ function Main() {
       });
     }
 
-  }, []);
+    // Получаем список Boost с сервера
+    axios.get('/boost/')
+      .then(response => {
+        setBoosts(response.data); // Устанавливаем список Boost в состояние
+      })
+      .catch(error => {
+        console.error('Ошибка при получении списка Boost:', error);
+      });
+
+  }, [navigate]);
 
   // Функция для вызова вибрации
   const triggerHapticFeedback = () => {
     const { WebApp } = window.Telegram;
     WebApp.HapticFeedback.impactOccurred("medium");
+  };
+
+  // Функция для покупки Boost
+  const buyBoost = (id_boost) => {
+    axios.patch(`/boost/${id_boost}/`, {}, {
+      headers: {
+        'custom-header': 'query_id=AAEvw-FeAAAAAC_D4V6JvhPD&user=%7B%22id%22%3A1591853871%2C%22first_name%22%3A%22Andy%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22og_Andy%22%2C%22language_code%22%3A%22ru%22%2C%22allows_write_to_pm%22%3Atrue%7D&auth_date=1728994271&hash=4a9c2eed2acd85a284f28bad44053724c054060a0fb4da7170ceea705b410eda', // Здесь можно добавить любые заголовки, если нужно
+      }
+    })
+    .then(response => {
+      console.log('Boost purchased:', response.data);
+    })
+    .catch(error => {
+      console.error('Ошибка при покупке Boost:', error);
+    });
   };
 
   return (
@@ -42,63 +85,23 @@ function Main() {
           <div className='headone'>
             <p className='h1upg'>UPGRADE YOUR FARM</p>
           </div>
-          
-            <p className='usebostp'>USE BOOSTS TO INCREASE YOUR $CRT FARMING RATES</p>
-            
+          <p className='usebostp'>USE BOOSTS TO INCREASE YOUR $CRT FARMING RATES</p>
         </div>
-        
       </header>
+
+      {/* Контейнер для Boost */}
       <div className='boostcont'>
-        <div className='boost'>
-          <span>
-            <p>Upgrade 1</p>
-            <p>level 1/3</p>
-          </span>
-          <button onClick={triggerHapticFeedback}>
-            <p>BUY</p>
-            <p>500 $CRT</p>
-          </button>
-        </div>
-        <div className='boost'>
-          <span>
-            <p>Upgrade 1</p>
-            <p>level 1/3</p>
-          </span>
-          <button onClick={triggerHapticFeedback}>
-            <p>BUY</p>
-            <p>500 $CRT</p>
-          </button>
-        </div>
-        <div className='boost'>
-          <span>
-            <p>Upgrade 1</p>
-            <p>level 1/3</p>
-          </span>
-          <button onClick={triggerHapticFeedback}>
-            <p>BUY</p>
-            <p>500 $CRT</p>
-          </button>
-        </div>
-        <div className='boost'>
-          <span>
-            <p>Upgrade 1</p>
-            <p>level 1/3</p>
-          </span>
-          <button onClick={triggerHapticFeedback}>
-            <p>BUY</p>
-            <p>500 $CRT</p>
-          </button>
-        </div>
-        <div className='boost'>
-          <span>
-            <p>Upgrade 1</p>
-            <p>level 1/3</p>
-          </span>
-          <button onClick={triggerHapticFeedback}>
-            <p>BUY</p>
-            <p>500 $CRT</p>
-          </button>
-        </div>
+        {boosts.map((boost) => (
+          <BoostItem
+            key={boost.id}
+            level={boost.auto_watering}  // Пример использования одного из параметров
+            price={500}  // Замените на фактическое значение, если нужно
+            onBuy={() => {
+              triggerHapticFeedback();
+              buyBoost(boost.id);  // Покупка Boost
+            }}
+          />
+        ))}
       </div>
 
       <button className='buyfarm' onClick={triggerHapticFeedback}>
@@ -109,7 +112,7 @@ function Main() {
       <footer>
         <div className='rabclub'>
           <div className='rabclubcont'>
-            <img src={yellrab} />
+            <img src={yellrab} alt="Rabbit club" />
             <div className='rabclubinfo'>
               <p>Rabbit club socials give you latest alpha on the project</p>
               <button onClick={triggerHapticFeedback}>JOIN US NOW</button>
